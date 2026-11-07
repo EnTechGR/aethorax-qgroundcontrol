@@ -18,11 +18,3 @@ QList<MAV_CMD> AethoraxSubFirmwarePlugin::supportedMissionCommands(QGCMAVLink::V
         MAV_CMD_DO_SET_SERVO,   // Lights
     };
 }
-
-QString AethoraxSubFirmwarePlugin::missionCommandOverrides(QGCMAVLink::VehicleClass_t vehicleClass) const
-{
-    if (vehicleClass == QGCMAVLink::VehicleClassSub) {
-        return QStringLiteral(":/aethorax/AETHORAX-MavCmdInfoSub.json");
-    }
-    return ArduSubFirmwarePlugin::missionCommandOverrides(vehicleClass);
-}

@@ -1,5 +1,6 @@
 #include "AethoraxFirmwarePluginFactory.h"
 
+#include "AethoraxBaseFirmwarePlugin.h"
 #include "AethoraxSubFirmwarePlugin.h"
 
 // Registers itself with the FirmwarePluginFactoryRegister when constructed.
@@ -12,7 +13,7 @@ AethoraxFirmwarePluginFactory::AethoraxFirmwarePluginFactory(QObject *parent)
 
 QList<QGCMAVLink::FirmwareClass_t> AethoraxFirmwarePluginFactory::supportedFirmwareClasses() const
 {
-    return { QGCMAVLink::FirmwareClassArduPilot };
+    return { QGCMAVLink::FirmwareClassArduPilot, QGCMAVLink::FirmwareClassGeneric };
 }
 
 QList<QGCMAVLink::VehicleClass_t> AethoraxFirmwarePluginFactory::supportedVehicleClasses() const
@@ -22,6 +23,12 @@ QList<QGCMAVLink::VehicleClass_t> AethoraxFirmwarePluginFactory::supportedVehicl
 
 FirmwarePlugin *AethoraxFirmwarePluginFactory::firmwarePluginForAutopilot(MAV_AUTOPILOT autopilotType, MAV_TYPE /*vehicleType*/)
 {
+    if (autopilotType == MAV_AUTOPILOT_GENERIC) {
+        if (!_basePlugin) {
+            _basePlugin = new AethoraxBaseFirmwarePlugin(this);
+        }
+        return _basePlugin;
+    }
     // Any ArduPilot vehicle is treated as the Sub: this build plans for Nemo1 only.
     if (autopilotType != MAV_AUTOPILOT_ARDUPILOTMEGA) {
         return nullptr;

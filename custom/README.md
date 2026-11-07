@@ -30,16 +30,21 @@ ArduSub doesn't store user commands, so a plan with operations goes to the Jetso
 ```
 custom/
 ├── CMakeLists.txt, cmake/CustomOverrides.cmake   build hook: name, the firmware factories
-├── custom.qrc, res/AETHORAX-MavCmdInfoSub.json   the operations as QGroundControl commands (generated)
+├── custom.qrc, res/AETHORAX-MavCmdInfoCommon.json  the command list: QGroundControl's + the operations (generated)
 ├── src/AethoraxPlugin.*                          core plugin: offline planning is ArduPilot Sub
-├── src/AethoraxSubFirmwarePlugin.*               the dropdown's commands, and where their fields come from
-├── src/AethoraxFirmwarePluginFactory.*           the only firmware: ArduPilot Sub
+├── src/AethoraxSubFirmwarePlugin.*               the dropdown's commands
+├── src/AethoraxBaseFirmwarePlugin.*              serves the command list above as QGroundControl's base list
+├── src/AethoraxFirmwarePluginFactory.*           the only firmware: ArduPilot Sub (and the base list)
 └── tools/generate_mission_commands.py            res/…json from the AETHORAX config (--check in CI)
 ```
 
-Outside `custom/`, one upstream file changes: `src/MissionManager/MavCmdInfoCommon.json`
-gains base entries for the MAVLink user commands (`WAYPOINT_USER_1-5`, `USER_1-5`).
-An override can't add a command that the base list lacks, and stock builds never list them.
+Nothing outside `custom/` changes. QGroundControl takes a command's name only from
+its **base** list of commands; an override can't name one. So the factory also
+serves the generic firmware class, and its plugin returns
+`res/AETHORAX-MavCmdInfoCommon.json` as the base list. The generator builds that
+file from upstream's own `src/MissionManager/MavCmdInfoCommon.json` plus the
+operations. After merging an upstream release, run the generator again; the
+`--check` in CI fails until you do.
 
 ## Adding an operation
 
@@ -77,4 +82,4 @@ git merge v5.x.y            # on branch aethorax; resolve, rebuild, test
 ```
 
 `upstream` is `https://github.com/mavlink/qgroundcontrol.git`. Our changes are
-kept to `custom/` and the one JSON file above, so merges stay small.
+kept to `custom/`, so merges don't conflict.
