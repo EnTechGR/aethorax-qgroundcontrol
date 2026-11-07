@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/aethorax">
+        <file alias="AETHORAX-MavCmdInfoSub.json">res/AETHORAX-MavCmdInfoSub.json</file>
+    </qresource>
+</RCC>
