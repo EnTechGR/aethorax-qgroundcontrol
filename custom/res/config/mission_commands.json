@@ -1450,7 +1450,7 @@
             "id": 31010,
             "rawName": "MAV_CMD_USER_1",
             "friendlyName": "Dive",
-            "description": "AETHORAX Dive: straight down to the depth, at the descent speed, where the vehicle is. The mission refuses a depth beyond its limit (config/missions/<mission>.yaml).",
+            "description": "",
             "category": "AETHORAX",
             "friendlyEdit": true,
             "param1": {

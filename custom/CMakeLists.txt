@@ -10,6 +10,8 @@ set(QGC_RESOURCES ${QGC_RESOURCES} ${CUSTOM_RESOURCES} CACHE STRING "Paths to .q
 set(CUSTOM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxPlugin.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxPlugin.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxConfig.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxConfig.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxBaseFirmwarePlugin.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxBaseFirmwarePlugin.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxSubFirmwarePlugin.cc
@@ -33,5 +35,6 @@ set(CUSTOM_DEFINITIONS
 
 set(CUSTOM_QT_COMPONENTS
     Core
+    Qml
     CACHE INTERNAL "" FORCE
 )

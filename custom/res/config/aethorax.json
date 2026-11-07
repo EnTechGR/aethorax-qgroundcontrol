@@ -1,0 +1,14 @@
+{
+    "comment": "AETHORAX QGroundControl configuration, read at startup (custom/README.md, 'Configuration'). Copy this folder to <Documents>/<application name>/Config, or point AETHORAX_QGC_CONFIG at one, to change it without rebuilding.",
+    "fileType": "AethoraxConfig",
+    "version": 1,
+    "missionCommands": {
+        "file": "mission_commands.json",
+        "dropdown": {
+            "firmwareCommands": true,
+            "add": ["MAV_CMD_USER_1"],
+            "remove": [],
+            "categoriesFirst": ["AETHORAX"]
+        }
+    }
+}

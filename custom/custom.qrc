@@ -1,5 +1,9 @@
 <RCC>
-    <qresource prefix="/aethorax">
-        <file alias="AETHORAX-MavCmdInfoCommon.json">res/AETHORAX-MavCmdInfoCommon.json</file>
+    <qresource prefix="/aethorax/config">
+        <file alias="aethorax.json">res/config/aethorax.json</file>
+        <file alias="mission_commands.json">res/config/mission_commands.json</file>
+    </qresource>
+    <qresource prefix="/Custom/qml/QGroundControl/Controls">
+        <file alias="MissionCommandDialog.qml">qml/MissionCommandDialog.qml</file>
     </qresource>
 </RCC>

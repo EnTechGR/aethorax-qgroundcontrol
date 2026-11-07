@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
 """The AETHORAX operations as QGroundControl mission commands, from the AETHORAX config.
 
-    generate_mission_commands.py           write custom/res/AETHORAX-MavCmdInfoCommon.json
-    generate_mission_commands.py --check   exit 1 if the file is not what the config gives
-    [--config <dir>]                       the autonomy's config/ (default: the AETHORAX
-                                           repository this one is a submodule of)
+    generate_mission_commands.py              write custom/res/config/mission_commands.json
+                                              (the copy built into the application)
+    generate_mission_commands.py --check      exit 1 if that file is not what the config gives
+    generate_mission_commands.py --out-dir D  write mission_commands.json and aethorax.json to D
+                                              instead: a configuration folder the application reads
+                                              at startup, no rebuild (custom/README.md, "Configuration")
+    [--config <dir>]                          the autonomy's config/ (default: the AETHORAX
+                                              repository this one is a submodule of)
 
 Each operation is a MAVLink user command (MAV_CMD_USER_n, or WAYPOINT_USER_n when it
 has a position) with its own name, fields, units, defaults and limits. The file is
 QGroundControl's own base list of commands (src/MissionManager/MavCmdInfoCommon.json)
 plus the operations as full entries: only the base list may name a command, so the
-operations cannot be overrides (AethoraxBaseFirmwarePlugin serves this file). The limits
+operations cannot be overrides (AethoraxBaseFirmwarePlugin serves this file). Which
+commands the dropdown offers is set in aethorax.json, next to it. The limits
 are the ones the Jetson enforces, read from its config, so QGroundControl offers
 exactly what the mission will accept: each value is written once
 (software/jetson/autonomy/config/README.md). The Jetson's plan tool maps the same
@@ -20,13 +25,16 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import sys
 from pathlib import Path
 
 import yaml
 
 HERE = Path(__file__).resolve().parent
-OUT = HERE.parent / "res" / "AETHORAX-MavCmdInfoCommon.json"
+BUILT_IN = HERE.parent / "res" / "config"
+OUT = BUILT_IN / "mission_commands.json"
+MANIFEST = BUILT_IN / "aethorax.json"
 UPSTREAM_BASE = HERE.parents[1] / "src" / "MissionManager" / "MavCmdInfoCommon.json"
 DEFAULT_CONFIG = HERE.parents[2] / "software" / "jetson" / "autonomy" / "config"
 
@@ -56,8 +64,7 @@ def dive(config: Path) -> dict:
         "id": MAV_CMD_USER_1,
         "rawName": "MAV_CMD_USER_1",
         "friendlyName": "Dive",
-        "description": "AETHORAX Dive: straight down to the depth, at the descent speed, where the vehicle is. "
-                       "The mission refuses a depth beyond its limit (config/missions/<mission>.yaml).",
+        "description": "",  # QGroundControl requires the key; the picker shows no text under the name
         "category": "AETHORAX",
         "friendlyEdit": True,
         "param1": {"label": "Depth", "units": "m", "default": 5.0, "decimalPlaces": 1, "min": 0.0},
@@ -83,6 +90,7 @@ def build(config: Path) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--check", action="store_true")
+    parser.add_argument("--out-dir", type=Path)
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     args = parser.parse_args()
     text = build(args.config)
@@ -90,6 +98,15 @@ def main() -> int:
         if not OUT.is_file() or OUT.read_text() != text:
             print(f"{OUT} is stale: run custom/tools/generate_mission_commands.py", file=sys.stderr)
             return 1
+        return 0
+    if args.out_dir:
+        args.out_dir.mkdir(parents=True, exist_ok=True)
+        (args.out_dir / OUT.name).write_text(text)
+        print(f"wrote {args.out_dir / OUT.name}")
+        manifest = args.out_dir / MANIFEST.name
+        if not manifest.exists():  # never overwrite a team's own dropdown choice
+            shutil.copyfile(MANIFEST, manifest)
+            print(f"wrote {manifest}")
         return 0
     OUT.write_text(text)
     print(f"wrote {OUT}")
