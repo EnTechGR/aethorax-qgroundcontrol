@@ -1,11 +1,14 @@
 #include "AethoraxPlugin.h"
 #include "AethoraxConfig.h"
+#include "AethoraxLabels.h"
+#include "AethoraxMissionStart.h"
 
 #include "AppSettings.h"
 #include "FactMetaData.h"
 #include "QGCMAVLink.h"
 
 #include <QtCore/QApplicationStatic>
+#include <QtCore/QCoreApplication>
 #include <QtCore/QFile>
 #include <QtQml/QQmlApplicationEngine>
 
@@ -38,6 +41,10 @@ void AethoraxPlugin::adjustSettingMetaData(const QString &settingsGroup, FactMet
 
 QQmlApplicationEngine *AethoraxPlugin::createQmlApplicationEngine(QObject *parent)
 {
+    if (!_labels) {
+        _labels = new AethoraxLabels(this);
+        QCoreApplication::installTranslator(_labels);
+    }
     _qmlEngine = QGCCorePlugin::createQmlApplicationEngine(parent);
     _qmlOverrides = new AethoraxQmlOverrides();
     _qmlEngine->addUrlInterceptor(_qmlOverrides);
@@ -58,6 +65,38 @@ void AethoraxPlugin::destroyQmlApplicationEngine(QQmlApplicationEngine *qmlEngin
 QStringList AethoraxPlugin::categoriesFirst() const
 {
     return AethoraxConfig::categoriesFirst();
+}
+
+QVariantMap AethoraxPlugin::config(const QString &section) const
+{
+    return AethoraxConfig::section(section);
+}
+
+int AethoraxPlugin::commandNumber(const QString &rawName) const
+{
+    return AethoraxConfig::commandNumber(rawName);
+}
+
+QVariantMap AethoraxPlugin::initialStatus(QObject *settingsItem) const
+{
+    return AethoraxMissionStart::initialStatus(settingsItem);
+}
+
+void AethoraxPlugin::setInitialStatus(QObject *settingsItem, const QString &device, bool on)
+{
+    AethoraxMissionStart::setInitialStatus(settingsItem, device, on);
+}
+
+void AethoraxPlugin::postSaveToJson(PlanMasterController *pController, QJsonObject &json)
+{
+    QGCCorePlugin::postSaveToJson(pController, json);
+    AethoraxMissionStart::save(pController, json);
+}
+
+void AethoraxPlugin::postLoadFromJson(PlanMasterController *pController, QJsonObject &json)
+{
+    QGCCorePlugin::postLoadFromJson(pController, json);
+    AethoraxMissionStart::load(pController, json);
 }
 
 QUrl AethoraxQmlOverrides::intercept(const QUrl &url, QQmlAbstractUrlInterceptor::DataType type)

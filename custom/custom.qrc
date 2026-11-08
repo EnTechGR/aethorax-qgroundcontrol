@@ -6,4 +6,9 @@
     <qresource prefix="/Custom/qml/QGroundControl/Controls">
         <file alias="MissionCommandDialog.qml">qml/MissionCommandDialog.qml</file>
     </qresource>
+    <qresource prefix="/Custom/qml/QGroundControl/PlanView">
+        <file alias="PlanViewRightPanel.qml">qml/PlanViewRightPanel.qml</file>
+        <file alias="PlanView.qml">qml/PlanView.qml</file>
+        <file alias="MissionSettingsEditor.qml">qml/MissionSettingsEditor.qml</file>
+    </qresource>
 </RCC>

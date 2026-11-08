@@ -1468,6 +1468,14 @@
                 "min": 0.05,
                 "max": 1.0
             }
+        },
+        {
+            "id": 31011,
+            "rawName": "MAV_CMD_USER_2",
+            "friendlyName": "Submerge",
+            "description": "",
+            "category": "AETHORAX",
+            "friendlyEdit": true
         }
     ]
 }

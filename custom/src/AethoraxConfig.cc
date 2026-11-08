@@ -81,6 +81,7 @@ QString findFile(const QString &name, const QString &fileType, QJsonObject &obje
 /// Everything read from the files, once.
 struct Loaded
 {
+    QJsonObject manifest;
     QString commandsFile;
     QHash<QString, int> commandIds;  ///< rawName → id, from the commands file
     bool keepFirmwareCommands = true;
@@ -98,6 +99,7 @@ const Loaded &loaded()
             qCWarning(AethoraxConfigLog) << "No valid" << kManifestFile;
             return l;
         }
+        l.manifest = manifest;
         const QJsonObject missionCommands = manifest.value(QStringLiteral("missionCommands")).toObject();
         const QJsonObject dropdown = missionCommands.value(QStringLiteral("dropdown")).toObject();
         l.keepFirmwareCommands = dropdown.value(QStringLiteral("firmwareCommands")).toBool(true);
@@ -177,4 +179,18 @@ QList<MAV_CMD> AethoraxConfig::missionDropdown(const QList<MAV_CMD> &firmwareCom
 QStringList AethoraxConfig::categoriesFirst()
 {
     return loaded().categoriesFirst;
+}
+
+int AethoraxConfig::commandNumber(const QString &rawName)
+{
+    return loaded().commandIds.value(rawName, 0);
+}
+
+QVariantMap AethoraxConfig::section(const QString &path)
+{
+    QJsonObject object = loaded().manifest;
+    for (const QString &key : path.split(QLatin1Char('.'), Qt::SkipEmptyParts)) {
+        object = object.value(key).toObject();
+    }
+    return object.toVariantMap();
 }

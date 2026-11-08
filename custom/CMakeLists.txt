@@ -12,6 +12,10 @@ set(CUSTOM_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxPlugin.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxConfig.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxConfig.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxLabels.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxLabels.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxMissionStart.cc
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxMissionStart.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxBaseFirmwarePlugin.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxBaseFirmwarePlugin.h
     ${CMAKE_CURRENT_SOURCE_DIR}/src/AethoraxSubFirmwarePlugin.cc

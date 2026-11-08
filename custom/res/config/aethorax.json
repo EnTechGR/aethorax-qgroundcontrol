@@ -6,9 +6,41 @@
         "file": "mission_commands.json",
         "dropdown": {
             "firmwareCommands": true,
-            "add": ["MAV_CMD_USER_1"],
+            "add": ["MAV_CMD_USER_1", "MAV_CMD_USER_2"],
             "remove": [],
             "categoriesFirst": ["AETHORAX"]
+        }
+    },
+    "labels": {
+        "comment": "Text in the application, renamed: for each context (the C++ class, or the QML file's name), the original English text and ours.",
+        "PlanView": {"Takeoff": "Submerge"},
+        "MissionSettingsItem": {"Initial Camera Settings": "Initial Settings"}
+    },
+    "missionStart": {
+        "comment": "The devices switched on or off at the mission's start, in the first mission item (Initial Settings). Saved in the .plan file as aethorax.initialStatus.<key>. default: the status of a new plan.",
+        "devices": [
+            {"key": "camera", "label": "Camera", "default": true},
+            {"key": "dvl", "label": "DVL A50", "default": true},
+            {"key": "sonar", "label": "Forward-looking sonar (active)", "default": true}
+        ]
+    },
+    "planView": {
+        "toolStrip": {
+            "takeoff": {
+                "comment": "The tool strip's Takeoff button (renamed in labels). command: the mission command it inserts after the selected item, by rawName; without one, QGroundControl's own Takeoff item.",
+                "command": "MAV_CMD_USER_2"
+            }
+        },
+        "rightPanel": {
+            "comment": "The Plan view's side panel. Widths are in characters of the application's font, except maximumWidth: a fraction of the window. grip.length is in lines. cursor: a Qt cursor name (Qt::CursorShape), e.g. SizeHorCursor, SplitHCursor, ArrowCursor.",
+            "resizable": true,
+            "minimumWidth": 20,
+            "maximumWidth": 0.75,
+            "edge": {
+                "width": 0.75,
+                "cursor": "SizeHorCursor",
+                "grip": {"length": 3, "thickness": 0.2, "opacity": 0.35, "hoverOpacity": 0.9}
+            }
         }
     }
 }

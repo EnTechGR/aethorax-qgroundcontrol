@@ -39,6 +39,7 @@ UPSTREAM_BASE = HERE.parents[1] / "src" / "MissionManager" / "MavCmdInfoCommon.j
 DEFAULT_CONFIG = HERE.parents[2] / "software" / "jetson" / "autonomy" / "config"
 
 MAV_CMD_USER_1 = 31010
+MAV_CMD_USER_2 = 31011
 
 
 def ros_parameter(file: Path, dotted: str):
@@ -73,9 +74,27 @@ def dive(config: Path) -> dict:
     }
 
 
+def submerge(config: Path) -> dict:
+    """Submerge: from the surface, down along a slant path to the next waypoint's position and depth.
+
+    It starts the dive part of a mission; Plan's tool strip offers it in place of Takeoff
+    (aethorax.json, planView.toolStrip.takeoff). No fields yet: they come from its
+    operation review, like Dive's (custom/README.md, "Adding an operation").
+    """
+    del config  # its limits will come from the AETHORAX config once engineered
+    return {
+        "id": MAV_CMD_USER_2,
+        "rawName": "MAV_CMD_USER_2",
+        "friendlyName": "Submerge",
+        "description": "",
+        "category": "AETHORAX",
+        "friendlyEdit": True,
+    }
+
+
 def build(config: Path) -> str:
     document = json.loads(UPSTREAM_BASE.read_text())
-    operations = [dive(config)]
+    operations = [dive(config), submerge(config)]
     upstream_ids = {entry["id"] for entry in document["mavCmdInfo"]}
     clash = [op["id"] for op in operations if op["id"] in upstream_ids]
     if clash:

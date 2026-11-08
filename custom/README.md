@@ -14,12 +14,22 @@ automatically when it exists: no build flags are needed.
 | A mission item's dropdown | every command ArduPilot Sub supports | the same, plus **AETHORAX's operations**: **Dive** (Depth, Speed). Set in `aethorax.json`, read at startup |
 | An operation's fields | MAVLink's generic parameters | only the fields the operation has, with units, defaults and limits from the AETHORAX config |
 | Where the commands come from | built into the application | JSON files read at startup, so they change **without a rebuild** (below) |
+| Plan's tool strip | **Takeoff** inserts a Takeoff item | **Submerge** inserts the Submerge operation after the selected item. Name and command set in `aethorax.json` |
+| The first mission item | Initial Camera Settings | **Initial Settings**: each device **on or off** at the mission's start (Camera, DVL A50, forward-looking sonar), saved in the `.plan` file; then the camera settings |
+| The Plan view's side panel | a fixed width | drag its left edge to widen it; kept between runs, double-click the edge to reset. Limits, edge and cursor set in `aethorax.json` |
 
 Each operation is a MAVLink user command:
 
 | Operation | Command | Fields |
 |---|---|---|
 | Dive | `MAV_CMD_USER_1` (31010) | `param1` Depth (m, ≥ 0), `param2` Speed (m/s, between the descent table's first and last speeds; default: the descent profile's) |
+| Submerge | `MAV_CMD_USER_2` (31011) | none yet: from the surface down a slant path to the next waypoint's position and depth; it starts the dive part of a mission. Its fields come from its operation review |
+
+The plan file also carries the devices' status at the start, which stock QGroundControl ignores:
+
+```json
+"aethorax": {"version": 1, "initialStatus": {"camera": true, "dvl": true, "sonar": true}}
+```
 
 ArduSub doesn't store user commands, so a plan with operations goes to the Jetson
 **as a file** (*Save* / *Save As*), through the operator console, not through
@@ -31,10 +41,13 @@ ArduSub doesn't store user commands, so a plan with operations goes to the Jetso
 ```
 custom/
 ├── CMakeLists.txt, cmake/CustomOverrides.cmake   build hook: name, the firmware factories
-├── custom.qrc                                    builds res/config/ into the application
+├── custom.qrc                                    builds res/config/ and qml/ into the application
+├── qml/                                          upstream screens replaced by our copies (each says what it changes)
 ├── res/config/aethorax.json                      the manifest: which files, the dropdown
 ├── res/config/mission_commands.json              every command: QGroundControl's + the operations (generated)
 ├── src/AethoraxConfig.*                          finds and reads the configuration at startup
+├── src/AethoraxLabels.*                          renames the application's text, from aethorax.json's labels
+├── src/AethoraxMissionStart.*                    the devices' status at the start, in the .plan file
 ├── src/AethoraxPlugin.*                          core plugin: offline planning is ArduPilot Sub
 ├── src/AethoraxSubFirmwarePlugin.*               the dropdown, as aethorax.json says
 ├── src/AethoraxBaseFirmwarePlugin.*              serves mission_commands.json as QGroundControl's base list
@@ -64,7 +77,7 @@ the next one in the order is. Changes take effect on the next start.
 
 | File | What it holds |
 |---|---|
-| `aethorax.json` | `missionCommands.file`: the commands file's name. `missionCommands.dropdown`: `firmwareCommands` (keep ArduSub's own commands, `true`/`false`), `add` and `remove` (lists of commands by `rawName`, e.g. `"MAV_CMD_USER_1"`, or by number) |
+| `aethorax.json` | `missionCommands.file`: the commands file's name. `missionCommands.dropdown`: `firmwareCommands` (keep ArduSub's own commands, `true`/`false`), `add` and `remove` (lists of commands by `rawName`, e.g. `"MAV_CMD_USER_1"`, or by number), `categoriesFirst` (the picker's first categories). `planView.rightPanel`: `resizable`, `minimumWidth` (characters), `maximumWidth` (fraction of the window), `edge` (`width`, `cursor`: a [Qt cursor name](https://doc.qt.io/qt-6/qt.html#CursorShape-enum), `grip`: `length`, `thickness`, `opacity`, `hoverOpacity`). `planView.toolStrip.takeoff.command`: what the Takeoff button inserts, by `rawName` (none: QGroundControl's Takeoff item). `labels`: text renamed, by context (the C++ class or QML file's name) and original English text, e.g. `"PlanView": {"Takeoff": "Submerge"}`. `missionStart.devices`: the devices with an on/off status at the start (`key`, saved in the plan; `label`; `default`) |
 | `mission_commands.json` | every command QGroundControl can show: name, fields, units, defaults, limits. QGroundControl's own format (`fileType` `MavCmdInfo`); generated, don't edit by hand |
 
 To give a PC a newer set of operations without a new installer:
@@ -96,14 +109,37 @@ As upstream (see [tools/README.md](../tools/README.md) and [AGENTS.md](../AGENTS
 ./deploy/docker/run-docker.sh ubuntu Release     # → build/AETHORAX-QGroundControl-x86_64.AppImage
 ```
 
-Windows: Visual Studio 2022 and Qt 6.11 (QGroundControl's `build-config.json`),
-then `cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release` and `cmake --install build`
-for the NSIS installer. CI builds both (below).
+Windows, from a clone on a local drive (a WSL folder is too slow), in a Command Prompt:
+
+```bat
+custom\tools\windows-build.cmd            :: test build → build\AETHORAX-QGroundControl-installer*.exe
+custom\tools\windows-build.cmd --stable   :: release build: the version from the git tag, no "Daily"
+```
+
+The first build compiles everything (≈ 30–60 min); later ones only what changed.
+
+### Windows build tools (once per PC)
+
+QGroundControl's own installers, with the versions in `.github/build-config.json`
+(≈ 12 GB on C:). Python 3.12 first (`winget install -e --id Python.Python.3.12 --scope user`), then:
+
+```bat
+:: as Administrator: Visual Studio 2022 Build Tools (C++, with CMake and Ninja), NSIS, GStreamer
+python tools\setup\install_dependencies --platform windows --msvc --nsis
+
+:: as yourself, with Python's Scripts folder on PATH: Qt 6.11.1 in C:\Qt. The aqtinstall
+:: release can't find Qt 6.11 yet; this is the commit QGroundControl's CI uses (AQT_SOURCE)
+python tools\setup\install_qt.py install --version 6.11.1 --host windows --target desktop ^
+    --arch win64_msvc2022_64 --outdir C:\Qt ^
+    --aqt-source "git+https://github.com/miurahr/aqtinstall.git@8d961e61720b3c06583517fbc68d57ec0a4e9f95" ^
+    --modules "qtgraphs qtlocation qtpositioning qtspeech qtmultimedia qtserialport qtimageformats qtshadertools qtconnectivity qtquick3d qtsensors qtscxml qtwebsockets qthttpserver"
+```
 
 ## Planned: the rest from JSON
 
-The same mechanism (a section in `aethorax.json`, read by `AethoraxConfig`) can carry
-the look and the defaults later. What QGroundControl lets a custom build change at
+The same mechanism (a section in `aethorax.json`, read by `AethoraxConfig`; QML reads one with
+`QGroundControl.corePlugin.config("planView.rightPanel")`, with its own defaults for anything
+missing) carries every customization, and can carry the look and the defaults later. What QGroundControl lets a custom build change at
 startup, and so what can come from JSON:
 
 | Section (planned) | Through |

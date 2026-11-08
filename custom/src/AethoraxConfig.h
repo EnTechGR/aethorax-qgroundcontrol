@@ -5,6 +5,7 @@
 #include <QtCore/QList>
 #include <QtCore/QString>
 #include <QtCore/QStringList>
+#include <QtCore/QVariantMap>
 
 /// AETHORAX's runtime configuration: JSON files read once at startup, so what the
 /// planner offers can change without rebuilding the application.
@@ -32,4 +33,11 @@ namespace AethoraxConfig
 
     /// The manifest's dropdown.categoriesFirst: the categories the command picker lists first, in order.
     QStringList categoriesFirst();
+
+    /// A section of the manifest by its dotted path (e.g. "planView.rightPanel"), for the QML
+    /// that reads it; empty when the manifest has none, and the QML then uses its own defaults.
+    QVariantMap section(const QString &path);
+
+    /// A command's number from its rawName in the commands file (e.g. "MAV_CMD_USER_2"); 0 if none.
+    int commandNumber(const QString &rawName);
 }
