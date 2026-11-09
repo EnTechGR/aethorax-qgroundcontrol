@@ -52,7 +52,7 @@ custom/
 ├── src/AethoraxSubFirmwarePlugin.*               the dropdown, as aethorax.json says
 ├── src/AethoraxBaseFirmwarePlugin.*              serves mission_commands.json as QGroundControl's base list
 ├── src/AethoraxFirmwarePluginFactory.*           the only firmware: ArduPilot Sub (and the base list)
-└── tools/generate_mission_commands.py            mission_commands.json from the AETHORAX config (--check in CI)
+└── tools/generate_mission_commands.py            mission_commands.json from the AETHORAX config (--check)
 ```
 
 Nothing outside `custom/` changes. QGroundControl takes a command's name only from
@@ -60,7 +60,7 @@ its **base** list of commands; an override can't name one. So the factory also
 serves the generic firmware class, and its plugin returns `mission_commands.json`
 as the base list. The generator builds that file from upstream's own
 `src/MissionManager/MavCmdInfoCommon.json` plus the operations. After merging an
-upstream release, run the generator again; the `--check` in CI fails until you do.
+upstream release, run the generator again (`--check` tells whether it's needed).
 
 ## Configuration (no rebuild)
 
@@ -157,11 +157,25 @@ with a release.
 
 ## Versions and releases
 
+This repository is **public** so that GitHub builds its releases for free, and the
+releases can be downloaded from its Releases page. AETHORAX (private) only points at a
+commit of it, as its `qgroundcontrol/` submodule.
+
 - **Versioning:** QGroundControl takes its version from `git describe --tags`. Our releases are tags `vX.Y.Z` on branch `aethorax`, starting at **v0.0.1**.
-- **Publishing:** the release is published by AETHORAX, where this repository is the `qgroundcontrol/` submodule:
-  1. Commit and tag here: `git tag v0.0.1 && git push origin aethorax v0.0.1`.
-  2. In AETHORAX, point the submodule at that commit, commit, and tag `qgc-v0.0.1`.
-  3. AETHORAX's `.github/workflows/qgc-release.yml` builds the Windows installer and the Linux AppImage with QGroundControl's own CI actions, and attaches them to the AETHORAX release `qgc-v0.0.1`.
+- **Releasing:**
+  1. Commit, then tag and push: `git tag v0.0.2 && git push origin aethorax v0.0.2`.
+  2. `.github/workflows/aethorax-release.yml` builds the Windows installer and the Linux AppImage
+     (a stable build: no "Daily") and attaches them, with `SHA256SUMS.txt`, to a **draft** release `v0.0.2`.
+  3. Test the downloads from the draft, then press **Publish**.
+  4. In AETHORAX, point the submodule at the tagged commit and commit.
+- **A test build without a release:** *Actions → AETHORAX Release → Run workflow*, or on this PC
+  (Build, above).
+- **Upstream's workflows are disabled** in *Settings → Actions* (they're written for upstream's
+  repository and would fail or build on every pull request), and Dependabot is off
+  (`.github/dependabot.yml` removed). A workflow added by an upstream merge starts enabled:
+  disable it (`gh workflow disable <name>`).
+- **Before committing a change to the operations,** run `tools/generate_mission_commands.py --check`
+  from AETHORAX: it reads the AETHORAX config, which this public repository doesn't have.
 
 ## Following upstream
 

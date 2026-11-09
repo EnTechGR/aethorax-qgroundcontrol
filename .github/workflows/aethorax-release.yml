@@ -1,0 +1,159 @@
+# AETHORAX QGroundControl: the release. Builds the Windows installer and the Linux AppImage
+# with QGroundControl's own CI actions and attaches them to a DRAFT release of this
+# repository (custom/README.md, "Versions and releases"). The only workflow this fork runs:
+# upstream's are disabled in the repository's Actions settings.
+#
+#   push tag v<X.Y.Z> on branch aethorax  → stable build, draft release "AETHORAX QGroundControl X.Y.Z"
+#                                           (test the downloads from the draft, then press Publish)
+#   workflow_dispatch                     → test build only (artifacts on the run, no release)
+name: AETHORAX Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  linux:
+    name: Linux AppImage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0  # the version comes from git describe
+          persist-credentials: false
+
+      - name: Build Setup
+        uses: ./.github/actions/build-setup
+        with:
+          qt-host: linux
+          qt-arch: linux_gcc_64
+          build-type: Release
+
+      - name: Install Dependencies
+        uses: ./.github/actions/install-dependencies
+
+      - name: Configure
+        uses: ./.github/actions/cmake-configure
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Release
+
+      - name: Build
+        uses: ./.github/actions/cmake-build
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Release
+
+      - name: Create AppImage
+        uses: ./.github/actions/cmake-install
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Release
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: aethorax-qgc-linux
+          path: ${{ runner.temp }}/build/*.AppImage
+          if-no-files-found: error
+
+  windows:
+    name: Windows installer
+    runs-on: windows-2022
+    timeout-minutes: 180
+    env:
+      AQT_SOURCE: 'git+https://github.com/miurahr/aqtinstall.git@8d961e61720b3c06583517fbc68d57ec0a4e9f95'
+    defaults:
+      run:
+        shell: cmd
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Build Setup
+        uses: ./.github/actions/build-setup
+        with:
+          qt-host: windows
+          qt-arch: win64_msvc2022_64
+          aqt-source: ${{ env.AQT_SOURCE }}
+          build-type: Release
+
+      - name: Configure
+        uses: ./.github/actions/cmake-configure
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Release
+          extra-args: -DQGC_ENABLE_GST_VIDEOSTREAMING=ON
+
+      - name: Resolve GStreamer root
+        id: gst-root
+        shell: bash
+        run: |
+          python3 "${GITHUB_WORKSPACE}/.github/scripts/cmake_helper.py" cache-var \
+            --build-dir "${RUNNER_TEMP}/build" --name GStreamer_ROOT_DIR --required --output-key gst_root
+
+      - name: Add GStreamer to PATH
+        shell: bash
+        run: echo "${GST_ROOT}/bin" >> "$GITHUB_PATH"
+        env:
+          GST_ROOT: ${{ steps.gst-root.outputs.gst_root }}
+
+      - name: Build
+        uses: ./.github/actions/cmake-build
+        with:
+          build-dir: ${{ runner.temp }}/build
+          build-type: Release
+
+      - name: Create Installer
+        uses: ./.github/actions/cmake-install
+        with:
+          build-dir: ${{ runner.temp }}\build
+          build-type: Release
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: aethorax-qgc-windows
+          path: ${{ runner.temp }}/build/*installer*.exe
+          if-no-files-found: error
+
+  release:
+    name: Draft release
+    needs: [linux, windows]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Draft the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS.txt
+          ls -l
+          gh release create "${TAG}" * \
+            --draft \
+            --verify-tag \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "AETHORAX QGroundControl ${TAG#v}" \
+            --notes "QGroundControl ${TAG#v} for AETHORAX: Windows installer and Linux AppImage, with SHA256SUMS.txt. What it adds to QGroundControl: custom/README.md."
